@@ -1,0 +1,3 @@
+target 'luxe_empty' do
+  pod 'GVRSDK/NDK'
+end
