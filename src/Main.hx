@@ -48,6 +48,8 @@ class Main extends luxe.Game {
         Gvr.initializeGl(context);
         viewportList = Gvr.getRecommendedBufferViewports(context);
         swapChain = Gvr.swapChainCreate(context, 1);
+        Luxe.renderer.state.bindFramebuffer();
+        Luxe.renderer.state.bindRenderbuffer();
         
         visuals = [];
         
@@ -62,12 +64,12 @@ class Main extends luxe.Game {
         }
         Luxe.renderer.clear_color.rgb(0xffffff);
         
-        batcher = Luxe.renderer.create_batcher({
-            name: 'eye',
-            camera: new phoenix.Camera({camera_name: 'eye_view'}),
-            no_add: true,
-            layer: 1000,
-        });
+        // batcher = Luxe.renderer.create_batcher({
+        //     name: 'eye',
+        //     camera: new phoenix.Camera({camera_name: 'eye_view'}),
+        //     no_add: true,
+        //     layer: 1000,
+        // });
         
         // var display_quad = new QuadGeometry({
         //     batcher: batcher,
@@ -84,47 +86,27 @@ class Main extends luxe.Game {
         // Luxe.on(luxe.Ev.update, onupdate);
     } //ready
     
+    override function onprerender() {
+        frame = Gvr.swapChainAcquireFrame(swapChain);
+        var time = Gvr.getTimePointNow();
+        head = Gvr.getHeadSpaceFromStartSpaceRotation(context, time);
+        Gvr.frameBindBuffer(frame, 0);
+    }
+    
+    override function onpostrender() {
+        Gvr.frameUnbind(frame);
+        Gvr.frameSubmit(frame, viewportList, head);
+        
+        Luxe.renderer.state.bindFramebuffer();
+        Luxe.renderer.state.bindRenderbuffer();
+    }
+    
 
     override function update(delta:Float) {
         for(i in 0...visuals.length) visuals[i].rotation_z += (i-50) / 500;
 
     } //update
     
-    function ontickstart(_) {
-        trace(opengl.WebGL.getError());
-        GL.bindFramebuffer(GL.FRAMEBUFFER, texture.fbo);
-    }
-    
-    var debug = false;
-    function ontick(_) {
-        trace(opengl.WebGL.getError());
-        if(!debug) {
-            debug = true;
-            var frame = Gvr.swapChainAcquireFrame(swapChain);
-            var time = Gvr.getTimePointNow();
-            var head = Gvr.getHeadSpaceFromStartSpaceRotation(context, time);
-            var fboId = Gvr.frameGetFramebufferObject(frame, 0);
-            trace('gvr: $fboId default:${Luxe.renderer.default_fbo}');
-            Gvr.frameSubmit(frame, viewportList, head);
-            batcher.draw();
-            Luxe.renderer.state.bindFramebuffer();
-            trace(opengl.WebGL.getError());
-            untyped __cpp__('glInsertEventMarkerEXT(0, "com.apple.GPUTools.event.debug-frame")');
-        }
-        // trace(Gvr.getErrorString(Gvr.getError(context)));
-        // var fbo = new GLFramebuffer(fboId);
-        
-        // GL.bindFramebuffer(GL.FRAMEBUFFER, fbo);
-        
-        
-        // Gvr.frameUnbind(frame);
-        // GL.bindFramebuffer(GL.FRAMEBUFFER, default_fbo);
-        // Gvr.frameSubmit(frame, viewportList, head);
-    }
-    
-    function onupdate(_) {
-        
-    }
     
 
     override function onkeyup(event:KeyEvent) {
